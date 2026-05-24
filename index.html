@@ -464,8 +464,8 @@ function render() {
   const expRem     = D[tgtLv][0] - D[curLv][0];
 
   const factor = (600 / typeVal) * (25 / NATURE_EXP[nature]) * (boost ? 0.5 : 1);
-  document.getElementById('candyCount').textContent = fmt(Math.round(candyBase * factor));
-  document.getElementById('shardsValue').textContent = fmt(Math.round(shardsBase * factor));
+  document.getElementById('candyCount').textContent = fmt(Math.ceil(candyBase * factor));
+  document.getElementById('shardsValue').textContent = fmt(Math.ceil(shardsBase * factor));
   document.getElementById('expValue').textContent = 'EXP ' + fmt(expRem);
 }
 
