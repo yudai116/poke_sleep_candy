@@ -240,11 +240,11 @@
         <label>現在のレベル</label>
         <div class="level-control">
           <button class="btn-pm" id="curDec">−</button>
-          <span class="level-number" id="curDisplay">1</span>
+          <span class="level-number" id="curDisplay">15</span>
           <button class="btn-pm" id="curInc">+</button>
         </div>
         <div class="slider-wrap">
-          <input type="range" id="curSlider" min="1" max="64" value="1">
+          <input type="range" id="curSlider" min="1" max="64" value="15">
         </div>
       </div>
 
@@ -252,11 +252,11 @@
         <label>目標のレベル</label>
         <div class="level-control">
           <button class="btn-pm" id="tgtDec">−</button>
-          <span class="level-number target" id="tgtDisplay">2</span>
+          <span class="level-number target" id="tgtDisplay">50</span>
           <button class="btn-pm" id="tgtInc">+</button>
         </div>
         <div class="slider-wrap">
-          <input type="range" id="tgtSlider" min="2" max="65" value="2">
+          <input type="range" id="tgtSlider" min="16" max="65" value="50">
         </div>
       </div>
     </div>
@@ -404,7 +404,7 @@ const D = [
 
 const NATURE_EXP = { up: 30, neutral: 25, down: 21 };
 
-let curLv = 1, tgtLv = 2, typeVal = 600, nature = 'neutral', boost = 'off';
+let curLv = 15, tgtLv = 50, typeVal = 600, nature = 'neutral', boost = 'off';
 
 function fmt(n) { return n.toLocaleString('ja-JP'); }
 
@@ -430,15 +430,21 @@ function render() {
   updateSliderFill(cs); updateSliderFill(ts);
   updateButtons();
 
-  const candyBase  = D[tgtLv][1] - D[curLv][1];
-  const shardsBase = D[tgtLv][2] - D[curLv][2];
-  const expRem     = D[tgtLv][0] - D[curLv][0];
+  const expRem = D[tgtLv][0] - D[curLv][0];
 
-  const baseF = (600 / typeVal) * (25 / NATURE_EXP[nature]);
-  const candyF  = baseF * (boost !== 'off' ? 0.5 : 1);
-  const shardsF = baseF * (boost === 'normal' ? 2.5 : boost === 'mini' ? 2.0 : 1);
-  document.getElementById('candyCount').textContent = fmt(Math.ceil(candyBase * candyF));
-  document.getElementById('shardsValue').textContent = fmt(Math.ceil(shardsBase * shardsF));
+  const expPerCandy   = (typeVal / 600) * NATURE_EXP[nature] * (boost !== 'off' ? 2 : 1);
+  const boostShardsMult = boost === 'normal' ? 5 : boost === 'mini' ? 4 : 1;
+
+  let sumCandy = 0, sumShards = 0;
+  for (let lv = curLv + 1; lv <= tgtLv; lv++) {
+    const expLv   = D[lv][0] - D[lv-1][0];
+    const shardsPerCandy = (D[lv][2] - D[lv-1][2]) / (D[lv][1] - D[lv-1][1]);
+    const candyLv = expLv / expPerCandy;
+    sumCandy  += candyLv;
+    sumShards += candyLv * shardsPerCandy * boostShardsMult;
+  }
+  document.getElementById('candyCount').textContent = fmt(Math.ceil(sumCandy));
+  document.getElementById('shardsValue').textContent = fmt(Math.ceil(sumShards));
   document.getElementById('expValue').textContent = 'EXP ' + fmt(expRem);
 }
 
