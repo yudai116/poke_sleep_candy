@@ -428,10 +428,10 @@
       </label>
     </div>
 
-    <!-- Mini boost cap (visible only when ミニ selected) -->
+    <!-- Boost cap (visible when boost ON) -->
     <div class="setting-row" id="miniCapRow" style="display:none;">
       <div class="setting-label" style="flex-direction:column; align-items:flex-start; gap:4px;">
-        ミニブースト上限
+        アメブースト上限
         <div style="display:flex; align-items:center; gap:4px; font-weight:400; font-size:0.78rem; color:#888;">
           <input type="number" id="miniCapInput" value="350" min="1" max="9999" class="mini-cap-input">
           <span>個以降は通常として計算</span>
@@ -551,6 +551,7 @@ let curLv = 15, tgtLv = 50, typeVal = 600, nature = 'neutral', boostOn = false, 
 let remainingExp = Infinity; // Infinity → clamp to max in render()
 let useMiniCap = true;
 let miniCapValue = 350;
+let normalCapValue = 3500;
 
 function fmt(n) { return n.toLocaleString('ja-JP'); }
 
@@ -588,7 +589,8 @@ function render() {
   const boost = !boostOn ? 'off' : boostIsMini ? 'mini' : 'normal';
 
   document.getElementById('miniCheckRow').style.display = boostOn ? 'flex' : 'none';
-  document.getElementById('miniCapRow').style.display   = boost === 'mini' ? 'flex' : 'none';
+  document.getElementById('miniCapRow').style.display   = boostOn ? 'flex' : 'none';
+  document.getElementById('miniCapInput').value = boostIsMini ? miniCapValue : normalCapValue;
 
   // Remaining EXP slider/input setup
   const maxExpFirst = Math.round((D[curLv + 1][0] - D[curLv][0]) * typeExpMult);
@@ -603,8 +605,10 @@ function render() {
   updateSliderFill(expSlider);
 
   const initialCarry = maxExpFirst - remainingExp;
-  let miniLeft = (boost === 'mini' && useMiniCap) ? miniCapValue : Infinity;
-  let sumCandy = 0, sumMiniCandy = 0, sumNormalCandy = 0, sumShards = 0, expRem = 0, carry = initialCarry;
+  const capVal = boostIsMini ? miniCapValue : normalCapValue;
+  let capLeft = (boostOn && useMiniCap) ? capVal : Infinity;
+  const shardsMult = boost === 'mini' ? 4 : boost === 'normal' ? 5 : 1;
+  let sumCandy = 0, sumBoostedCandy = 0, sumNormalCandy = 0, sumShards = 0, expRem = 0, carry = initialCarry;
   for (let lv = curLv + 1; lv <= tgtLv; lv++) {
     const expLv = Math.round((D[lv][0] - D[lv-1][0]) * typeExpMult);
     expRem += expLv;
@@ -616,28 +620,24 @@ function render() {
       candyLv = Math.ceil(expNeeded / epcBase);
       shardsLv = candyLv * spc;
       carry = candyLv * epcBase - expNeeded + carryBase;
-    } else if (boost === 'normal') {
-      candyLv = Math.ceil(expNeeded / epcBoosted);
-      shardsLv = candyLv * spc * 5;
-      carry = candyLv * epcBoosted - expNeeded + carryBase;
-    } else if (miniLeft > 0) {
-      const miniNeeded = Math.ceil(expNeeded / epcBoosted);
-      if (miniNeeded <= miniLeft) {
-        candyLv = miniNeeded;
-        shardsLv = candyLv * spc * 4;
+    } else if (capLeft > 0) {
+      const boostedNeeded = Math.ceil(expNeeded / epcBoosted);
+      if (boostedNeeded <= capLeft) {
+        candyLv = boostedNeeded;
+        shardsLv = candyLv * spc * shardsMult;
         carry = candyLv * epcBoosted - expNeeded + carryBase;
-        if (miniLeft !== Infinity) miniLeft -= miniNeeded;
-        sumMiniCandy += candyLv;
+        if (capLeft !== Infinity) capLeft -= boostedNeeded;
+        sumBoostedCandy += candyLv;
       } else {
-        const miniExp = miniLeft * epcBoosted;
-        const expStillNeeded = expNeeded - miniExp;
+        const boostedExp = capLeft * epcBoosted;
+        const expStillNeeded = expNeeded - boostedExp;
         const normalNeeded = Math.ceil(expStillNeeded / epcBase);
-        candyLv = miniLeft + normalNeeded;
-        shardsLv = miniLeft * spc * 4 + normalNeeded * spc;
+        candyLv = capLeft + normalNeeded;
+        shardsLv = capLeft * spc * shardsMult + normalNeeded * spc;
         carry = normalNeeded * epcBase - expStillNeeded + carryBase;
-        sumMiniCandy += miniLeft;
+        sumBoostedCandy += capLeft;
         sumNormalCandy += normalNeeded;
-        miniLeft = 0;
+        capLeft = 0;
       }
     } else {
       candyLv = Math.ceil(expNeeded / epcBase);
@@ -653,11 +653,11 @@ function render() {
   document.getElementById('shardsValue').textContent = fmt(sumShards);
   document.getElementById('expValue').textContent = 'EXP ' + fmt(expRem);
 
-  const showBreakdown = boost === 'mini' && useMiniCap && sumNormalCandy > 0;
+  const showBreakdown = boostOn && useMiniCap && sumNormalCandy > 0;
   const breakdownEl = document.getElementById('candyBreakdown');
   breakdownEl.style.display = showBreakdown ? 'flex' : 'none';
   if (showBreakdown) {
-    document.getElementById('breakdownMini').textContent   = fmt(sumMiniCandy);
+    document.getElementById('breakdownMini').textContent   = fmt(sumBoostedCandy);
     document.getElementById('breakdownNormal').textContent = fmt(sumNormalCandy);
   }
 }
@@ -731,7 +731,10 @@ document.getElementById('miniCapSegment').addEventListener('click', e => {
 
 document.getElementById('miniCapInput').addEventListener('input', e => {
   const v = parseInt(e.target.value);
-  if (!isNaN(v) && v >= 1) { miniCapValue = v; render(); }
+  if (!isNaN(v) && v >= 1) {
+    if (boostIsMini) miniCapValue = v; else normalCapValue = v;
+    render();
+  }
 });
 
 document.getElementById('typeHelpBtn').addEventListener('click', () => {
