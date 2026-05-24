@@ -438,7 +438,7 @@ function render() {
 
   let sumCandy = 0, sumShards = 0, carry = 0;
   for (let lv = curLv + 1; lv <= tgtLv; lv++) {
-    const expLv = (D[lv][0] - D[lv-1][0]) * typeExpMult;
+    const expLv = Math.round((D[lv][0] - D[lv-1][0]) * typeExpMult);
     const shardsPerCandy = (D[lv][2] - D[lv-1][2]) / (D[lv][1] - D[lv-1][1]);
     const expNeeded = Math.max(0, expLv - carry);
     const candyLv = Math.ceil(expNeeded / expPerCandy);
