@@ -179,6 +179,30 @@
     .segment.nature button { font-size: 1rem; padding: 5px 12px; }
 
 
+    /* Remaining EXP section */
+    .exp-section { margin-bottom: 22px; }
+    .exp-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .exp-number-input {
+      width: 110px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #2d3748;
+      text-align: right;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+    .exp-number-input::-webkit-inner-spin-button,
+    .exp-number-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .exp-number-input:focus { border-color: #4caf50; }
+
     /* Divider */
     .divider {
       height: 1px;
@@ -258,6 +282,17 @@
         <div class="slider-wrap">
           <input type="range" id="tgtSlider" min="16" max="65" value="50">
         </div>
+      </div>
+    </div>
+
+    <!-- Remaining EXP for current level -->
+    <div class="exp-section">
+      <div class="exp-section-header">
+        <span class="setting-label">次のレベルまでの残り経験値</span>
+        <input type="number" id="expInput" min="0" value="0" class="exp-number-input">
+      </div>
+      <div class="slider-wrap">
+        <input type="range" id="expSlider" min="0" max="100" value="100">
       </div>
     </div>
 
@@ -406,6 +441,7 @@ const NATURE_EXP = { up: 30, neutral: 25, down: 21 };
 const TYPE_EXP_MULT = { 600: 1.0, 900: 1.5, 1080: 1.8, 1260: 2.1 };
 
 let curLv = 15, tgtLv = 50, typeVal = 600, nature = 'neutral', boost = 'off';
+let remainingExp = Infinity; // Infinity → clamp to max in render()
 
 function fmt(n) { return n.toLocaleString('ja-JP'); }
 
@@ -434,7 +470,21 @@ function render() {
   const typeExpMult     = TYPE_EXP_MULT[typeVal];
   const expPerCandy     = NATURE_EXP[nature] * (boost !== 'off' ? 2 : 1);
   const boostShardsMult = boost === 'normal' ? 5 : boost === 'mini' ? 4 : 1;
-  let sumCandy = 0, sumShards = 0, expRem = 0, carry = 0;
+
+  // Remaining EXP slider/input setup
+  const maxExpFirst = Math.round((D[curLv + 1][0] - D[curLv][0]) * typeExpMult);
+  if (remainingExp > maxExpFirst) remainingExp = maxExpFirst;
+  if (remainingExp < 0) remainingExp = 0;
+  const expSlider = document.getElementById('expSlider');
+  const expInput  = document.getElementById('expInput');
+  expSlider.max   = maxExpFirst;
+  expSlider.value = remainingExp;
+  expInput.max    = maxExpFirst;
+  expInput.value  = remainingExp;
+  updateSliderFill(expSlider);
+
+  const initialCarry = maxExpFirst - remainingExp;
+  let sumCandy = 0, sumShards = 0, expRem = 0, carry = initialCarry;
   for (let lv = curLv + 1; lv <= tgtLv; lv++) {
     const expLv = Math.round((D[lv][0] - D[lv-1][0]) * typeExpMult);
     expRem += expLv;
@@ -445,6 +495,7 @@ function render() {
     sumCandy  += candyLv;
     sumShards += candyLv * shardsPerCandy * boostShardsMult;
   }
+  expRem -= initialCarry;
   document.getElementById('candyCount').textContent = fmt(sumCandy);
   document.getElementById('shardsValue').textContent = fmt(sumShards);
   document.getElementById('expValue').textContent = 'EXP ' + fmt(expRem);
@@ -453,10 +504,15 @@ function render() {
 function setCurLv(v) {
   curLv = Math.max(1, Math.min(64, v));
   if (tgtLv <= curLv) tgtLv = curLv + 1;
+  remainingExp = Infinity;
   render();
 }
 function setTgtLv(v) {
   tgtLv = Math.max(curLv + 1, Math.min(65, v));
+  render();
+}
+function setRemainingExp(v) {
+  remainingExp = Math.max(0, +v || 0);
   render();
 }
 
@@ -467,12 +523,16 @@ document.getElementById('tgtDec').addEventListener('click', () => setTgtLv(tgtLv
 document.getElementById('tgtInc').addEventListener('click', () => setTgtLv(tgtLv + 1));
 document.getElementById('tgtSlider').addEventListener('input', e => setTgtLv(+e.target.value));
 
+document.getElementById('expSlider').addEventListener('input', e => setRemainingExp(+e.target.value));
+document.getElementById('expInput').addEventListener('input', e => setRemainingExp(+e.target.value));
+
 document.getElementById('typeSegment').addEventListener('click', e => {
   const btn = e.target.closest('button[data-val]');
   if (!btn) return;
   typeVal = +btn.dataset.val;
   document.querySelectorAll('#typeSegment button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  remainingExp = Infinity;
   render();
 });
 
