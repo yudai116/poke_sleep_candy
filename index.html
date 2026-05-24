@@ -403,6 +403,7 @@ const D = [
 ];
 
 const NATURE_EXP = { up: 30, neutral: 25, down: 21 };
+const TYPE_EXP_MULT = { 600: 1.0, 900: 1.5, 1080: 1.8, 1260: 2.1 };
 
 let curLv = 15, tgtLv = 50, typeVal = 600, nature = 'neutral', boost = 'off';
 
@@ -430,14 +431,14 @@ function render() {
   updateSliderFill(cs); updateSliderFill(ts);
   updateButtons();
 
-  const expRem = D[tgtLv][0] - D[curLv][0];
-
-  const expPerCandy   = (typeVal / 600) * NATURE_EXP[nature] * (boost !== 'off' ? 2 : 1);
+  const typeExpMult     = TYPE_EXP_MULT[typeVal];
+  const expPerCandy     = NATURE_EXP[nature] * (boost !== 'off' ? 2 : 1);
   const boostShardsMult = boost === 'normal' ? 5 : boost === 'mini' ? 4 : 1;
+  const expRem = Math.round((D[tgtLv][0] - D[curLv][0]) * typeExpMult);
 
   let sumCandy = 0, sumShards = 0;
   for (let lv = curLv + 1; lv <= tgtLv; lv++) {
-    const expLv   = D[lv][0] - D[lv-1][0];
+    const expLv   = (D[lv][0] - D[lv-1][0]) * typeExpMult;
     const shardsPerCandy = (D[lv][2] - D[lv-1][2]) / (D[lv][1] - D[lv-1][1]);
     const candyLv = expLv / expPerCandy;
     sumCandy  += candyLv;
