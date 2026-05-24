@@ -178,33 +178,6 @@
     /* Nature segment */
     .segment.nature button { font-size: 1rem; padding: 5px 12px; }
 
-    /* Boost */
-    .boost-control { display: flex; align-items: center; gap: 8px; }
-    .boost-icon { font-size: 1rem; color: #aaa; letter-spacing: -1px; }
-
-    .toggle-wrap { position: relative; display: inline-block; }
-    .toggle-wrap input { opacity: 0; width: 0; height: 0; position: absolute; }
-    .toggle-track {
-      display: block;
-      width: 52px; height: 28px;
-      background: #ccc;
-      border-radius: 14px;
-      cursor: pointer;
-      transition: background 0.2s;
-      position: relative;
-    }
-    .toggle-track::after {
-      content: '';
-      position: absolute;
-      width: 22px; height: 22px;
-      background: #fff;
-      border-radius: 50%;
-      top: 3px; left: 3px;
-      transition: transform 0.2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-    }
-    .toggle-wrap input:checked + .toggle-track { background: #4caf50; }
-    .toggle-wrap input:checked + .toggle-track::after { transform: translateX(24px); }
 
     /* Divider */
     .divider {
@@ -323,12 +296,10 @@
     <!-- Boost -->
     <div class="setting-row">
       <div class="setting-label">アメブースト</div>
-      <div class="boost-control">
-        <span class="boost-icon">≡≡</span>
-        <label class="toggle-wrap">
-          <input type="checkbox" id="boostToggle">
-          <span class="toggle-track"></span>
-        </label>
+      <div class="segment" id="boostSegment">
+        <button class="active" data-val="off">なし</button>
+        <button data-val="mini">ミニ</button>
+        <button data-val="normal">通常</button>
       </div>
     </div>
 
@@ -433,7 +404,7 @@ const D = [
 
 const NATURE_EXP = { up: 30, neutral: 25, down: 21 };
 
-let curLv = 1, tgtLv = 2, typeVal = 600, nature = 'neutral', boost = false;
+let curLv = 1, tgtLv = 2, typeVal = 600, nature = 'neutral', boost = 'off';
 
 function fmt(n) { return n.toLocaleString('ja-JP'); }
 
@@ -463,9 +434,11 @@ function render() {
   const shardsBase = D[tgtLv][2] - D[curLv][2];
   const expRem     = D[tgtLv][0] - D[curLv][0];
 
-  const factor = (600 / typeVal) * (25 / NATURE_EXP[nature]) * (boost ? 0.5 : 1);
-  document.getElementById('candyCount').textContent = fmt(Math.ceil(candyBase * factor));
-  document.getElementById('shardsValue').textContent = fmt(Math.ceil(shardsBase * factor));
+  const baseF = (600 / typeVal) * (25 / NATURE_EXP[nature]);
+  const candyF  = baseF * (boost !== 'off' ? 0.5 : 1);
+  const shardsF = baseF * (boost === 'normal' ? 2.5 : boost === 'mini' ? 2.0 : 1);
+  document.getElementById('candyCount').textContent = fmt(Math.ceil(candyBase * candyF));
+  document.getElementById('shardsValue').textContent = fmt(Math.ceil(shardsBase * shardsF));
   document.getElementById('expValue').textContent = 'EXP ' + fmt(expRem);
 }
 
@@ -504,8 +477,12 @@ document.getElementById('natureSegment').addEventListener('click', e => {
   render();
 });
 
-document.getElementById('boostToggle').addEventListener('change', e => {
-  boost = e.target.checked;
+document.getElementById('boostSegment').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-val]');
+  if (!btn) return;
+  boost = btn.dataset.val;
+  document.querySelectorAll('#boostSegment button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
   render();
 });
 
