@@ -204,6 +204,24 @@
     /* Nature segment */
     .segment.nature button { font-size: 1rem; padding: 5px 12px; }
 
+    /* Mini checkbox */
+    .mini-check-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #2d3748;
+      cursor: pointer;
+      user-select: none;
+    }
+    .mini-check-label input[type="checkbox"] {
+      width: 20px; height: 20px;
+      accent-color: #4caf50;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
 
     /* Remaining EXP section */
     .exp-section { margin-bottom: 22px; }
@@ -397,10 +415,17 @@
     <div class="setting-row">
       <div class="setting-label">アメブースト</div>
       <div class="segment" id="boostSegment">
-        <button class="active" data-val="off">なし</button>
-        <button data-val="mini">ミニ</button>
-        <button data-val="normal">通常</button>
+        <button class="active" data-val="off">OFF</button>
+        <button data-val="on">ON</button>
       </div>
+    </div>
+
+    <!-- Mini checkbox (shown when boost ON) -->
+    <div class="setting-row" id="miniCheckRow" style="display:none;">
+      <label class="mini-check-label" for="miniCheck">
+        <input type="checkbox" id="miniCheck" checked>
+        ミニアメブースト
+      </label>
     </div>
 
     <!-- Mini boost cap (visible only when ミニ selected) -->
@@ -522,7 +547,7 @@ const D = [
 const NATURE_EXP = { up: 30, neutral: 25, down: 21 };
 const TYPE_EXP_MULT = { 600: 1.0, 900: 1.5, 1080: 1.8, 1260: 2.1 };
 
-let curLv = 15, tgtLv = 50, typeVal = 600, nature = 'neutral', boost = 'off';
+let curLv = 15, tgtLv = 50, typeVal = 600, nature = 'neutral', boostOn = false, boostIsMini = true;
 let remainingExp = Infinity; // Infinity → clamp to max in render()
 let useMiniCap = true;
 let miniCapValue = 350;
@@ -560,8 +585,10 @@ function render() {
   const typeExpMult = TYPE_EXP_MULT[typeVal];
   const epcBase    = NATURE_EXP[nature];
   const epcBoosted = epcBase * 2;
+  const boost = !boostOn ? 'off' : boostIsMini ? 'mini' : 'normal';
 
-  document.getElementById('miniCapRow').style.display = boost === 'mini' ? 'flex' : 'none';
+  document.getElementById('miniCheckRow').style.display = boostOn ? 'flex' : 'none';
+  document.getElementById('miniCapRow').style.display   = boost === 'mini' ? 'flex' : 'none';
 
   // Remaining EXP slider/input setup
   const maxExpFirst = Math.round((D[curLv + 1][0] - D[curLv][0]) * typeExpMult);
@@ -682,10 +709,15 @@ document.getElementById('natureSegment').addEventListener('click', e => {
 document.getElementById('boostSegment').addEventListener('click', e => {
   const btn = e.target.closest('button[data-val]');
   if (!btn) return;
-  boost = btn.dataset.val;
+  boostOn = btn.dataset.val === 'on';
   document.querySelectorAll('#boostSegment button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  render();
+  scheduleRender();
+});
+
+document.getElementById('miniCheck').addEventListener('change', e => {
+  boostIsMini = e.target.checked;
+  scheduleRender();
 });
 
 document.getElementById('miniCapSegment').addEventListener('click', e => {
