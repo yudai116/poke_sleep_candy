@@ -69,6 +69,7 @@
       display: flex; align-items: center; justify-content: center;
       transition: background 0.12s;
       user-select: none;
+      touch-action: manipulation;
     }
     .btn-pm:hover { background: #d5d5d5; }
     .btn-pm:active { background: #c8c8c8; }
@@ -528,6 +529,12 @@ let miniCapValue = 350;
 
 function fmt(n) { return n.toLocaleString('ja-JP'); }
 
+let _rafId = null;
+function scheduleRender() {
+  if (_rafId !== null) return;
+  _rafId = requestAnimationFrame(() => { _rafId = null; render(); });
+}
+
 function updateSliderFill(el) {
   const min = parseInt(el.min), max = parseInt(el.max), val = parseInt(el.value);
   const pct = ((val - min) / (max - min)) * 100;
@@ -632,15 +639,15 @@ function setCurLv(v) {
   curLv = Math.max(1, Math.min(64, v));
   if (tgtLv <= curLv) tgtLv = curLv + 1;
   remainingExp = Infinity;
-  render();
+  scheduleRender();
 }
 function setTgtLv(v) {
   tgtLv = Math.max(curLv + 1, Math.min(65, v));
-  render();
+  scheduleRender();
 }
 function setRemainingExp(v) {
   remainingExp = Math.max(0, +v || 0);
-  render();
+  scheduleRender();
 }
 
 document.getElementById('curDec').addEventListener('click', () => setCurLv(curLv - 1));
