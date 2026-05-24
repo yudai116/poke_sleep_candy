@@ -438,15 +438,15 @@ function render() {
   for (let lv = curLv + 1; lv <= tgtLv; lv++) {
     const expLv = Math.round((D[lv][0] - D[lv-1][0]) * typeExpMult);
     expRem += expLv;
-    const shardsPerCandy = (D[lv][2] - D[lv-1][2]) / (D[lv][1] - D[lv-1][1]);
+    const shardsPerCandy = (D[lv][2] - D[lv-1][2]) / (D[lv][1] - D[lv-1][1]) | 0;
     const expNeeded = Math.max(0, expLv - carry);
     const candyLv = Math.ceil(expNeeded / expPerCandy);
     carry = candyLv * expPerCandy - expNeeded + Math.max(0, carry - expLv);
     sumCandy  += candyLv;
     sumShards += candyLv * shardsPerCandy * boostShardsMult;
   }
-  document.getElementById('candyCount').textContent = fmt(Math.ceil(sumCandy));
-  document.getElementById('shardsValue').textContent = fmt(Math.ceil(sumShards));
+  document.getElementById('candyCount').textContent = fmt(sumCandy);
+  document.getElementById('shardsValue').textContent = fmt(sumShards);
   document.getElementById('expValue').textContent = 'EXP ' + fmt(expRem);
 }
 
