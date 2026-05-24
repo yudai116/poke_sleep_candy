@@ -375,6 +375,18 @@
       </div>
     </div>
 
+    <!-- Mini boost cap (visible only when ミニ selected) -->
+    <div class="setting-row" id="miniCapRow" style="display:none;">
+      <div class="setting-label" style="flex-direction:column; align-items:flex-start; gap:2px;">
+        ミニブースト上限
+        <small style="font-weight:400; font-size:0.75rem; color:#888;">350個以降は通常として計算</small>
+      </div>
+      <div class="segment" id="miniCapSegment">
+        <button class="active" data-val="on">あり</button>
+        <button data-val="off">なし</button>
+      </div>
+    </div>
+
     <div class="divider"></div>
 
     <!-- Results -->
@@ -474,6 +486,7 @@ const TYPE_EXP_MULT = { 600: 1.0, 900: 1.5, 1080: 1.8, 1260: 2.1 };
 
 let curLv = 15, tgtLv = 50, typeVal = 600, nature = 'neutral', boost = 'off';
 let remainingExp = Infinity; // Infinity → clamp to max in render()
+let useMiniCap = true;
 
 function fmt(n) { return n.toLocaleString('ja-JP'); }
 
@@ -499,9 +512,11 @@ function render() {
   updateSliderFill(cs); updateSliderFill(ts);
   updateButtons();
 
-  const typeExpMult     = TYPE_EXP_MULT[typeVal];
-  const expPerCandy     = NATURE_EXP[nature] * (boost !== 'off' ? 2 : 1);
-  const boostShardsMult = boost === 'normal' ? 5 : boost === 'mini' ? 4 : 1;
+  const typeExpMult = TYPE_EXP_MULT[typeVal];
+  const epcBase    = NATURE_EXP[nature];
+  const epcBoosted = epcBase * 2;
+
+  document.getElementById('miniCapRow').style.display = boost === 'mini' ? 'flex' : 'none';
 
   // Remaining EXP slider/input setup
   const maxExpFirst = Math.round((D[curLv + 1][0] - D[curLv][0]) * typeExpMult);
@@ -516,16 +531,49 @@ function render() {
   updateSliderFill(expSlider);
 
   const initialCarry = maxExpFirst - remainingExp;
+  let miniLeft = (boost === 'mini' && useMiniCap) ? 350 : Infinity;
   let sumCandy = 0, sumShards = 0, expRem = 0, carry = initialCarry;
   for (let lv = curLv + 1; lv <= tgtLv; lv++) {
     const expLv = Math.round((D[lv][0] - D[lv-1][0]) * typeExpMult);
     expRem += expLv;
-    const shardsPerCandy = (D[lv][2] - D[lv-1][2]) / (D[lv][1] - D[lv-1][1]) | 0;
+    const spc = (D[lv][2] - D[lv-1][2]) / (D[lv][1] - D[lv-1][1]) | 0;
     const expNeeded = Math.max(0, expLv - carry);
-    const candyLv = Math.ceil(expNeeded / expPerCandy);
-    carry = candyLv * expPerCandy - expNeeded + Math.max(0, carry - expLv);
-    sumCandy  += candyLv;
-    sumShards += candyLv * shardsPerCandy * boostShardsMult;
+    const carryBase = Math.max(0, carry - expLv);
+    let candyLv = 0, shardsLv = 0;
+    if (boost === 'off') {
+      candyLv = Math.ceil(expNeeded / epcBase);
+      shardsLv = candyLv * spc;
+      carry = candyLv * epcBase - expNeeded + carryBase;
+    } else if (boost === 'normal') {
+      candyLv = Math.ceil(expNeeded / epcBoosted);
+      shardsLv = candyLv * spc * 5;
+      carry = candyLv * epcBoosted - expNeeded + carryBase;
+    } else if (miniLeft > 0) {
+      const miniNeeded = Math.ceil(expNeeded / epcBoosted);
+      if (miniNeeded <= miniLeft) {
+        // 全レベル分ミニブーストで賄える
+        candyLv = miniNeeded;
+        shardsLv = candyLv * spc * 4;
+        carry = candyLv * epcBoosted - expNeeded + carryBase;
+        if (miniLeft !== Infinity) miniLeft -= miniNeeded;
+      } else {
+        // 残りミニを使い切り、不足分は通常アメで補う
+        const miniExp = miniLeft * epcBoosted;
+        const expStillNeeded = expNeeded - miniExp;
+        const normalNeeded = Math.ceil(expStillNeeded / epcBase);
+        candyLv = miniLeft + normalNeeded;
+        shardsLv = miniLeft * spc * 4 + normalNeeded * spc;
+        carry = normalNeeded * epcBase - expStillNeeded + carryBase;
+        miniLeft = 0;
+      }
+    } else {
+      // ミニブースト上限消費済み → 通常アメ
+      candyLv = Math.ceil(expNeeded / epcBase);
+      shardsLv = candyLv * spc;
+      carry = candyLv * epcBase - expNeeded + carryBase;
+    }
+    sumCandy += candyLv;
+    sumShards += shardsLv;
   }
   expRem -= initialCarry;
   document.getElementById('candyCount').textContent = fmt(sumCandy);
@@ -582,6 +630,15 @@ document.getElementById('boostSegment').addEventListener('click', e => {
   if (!btn) return;
   boost = btn.dataset.val;
   document.querySelectorAll('#boostSegment button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+});
+
+document.getElementById('miniCapSegment').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-val]');
+  if (!btn) return;
+  useMiniCap = btn.dataset.val === 'on';
+  document.querySelectorAll('#miniCapSegment button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   render();
 });
