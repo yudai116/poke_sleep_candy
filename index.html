@@ -228,6 +228,33 @@
     .exp-number-input::-webkit-outer-spin-button { -webkit-appearance: none; }
     .exp-number-input:focus { border-color: #4caf50; }
 
+    .mini-cap-input {
+      width: 58px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 3px 6px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #2d3748;
+      text-align: right;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+    .mini-cap-input::-webkit-inner-spin-button,
+    .mini-cap-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .mini-cap-input:focus { border-color: #4caf50; }
+
+    .candy-breakdown {
+      font-size: 0.82rem;
+      color: #888;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .breakdown-mini  { font-weight: 700; color: #4caf50; }
+    .breakdown-plus  { color: #bbb; }
+    .breakdown-normal { font-weight: 700; color: #2d3748; }
+
     /* Divider */
     .divider {
       height: 1px;
@@ -377,9 +404,12 @@
 
     <!-- Mini boost cap (visible only when ミニ selected) -->
     <div class="setting-row" id="miniCapRow" style="display:none;">
-      <div class="setting-label" style="flex-direction:column; align-items:flex-start; gap:2px;">
+      <div class="setting-label" style="flex-direction:column; align-items:flex-start; gap:4px;">
         ミニブースト上限
-        <small style="font-weight:400; font-size:0.75rem; color:#888;">350個以降は通常として計算</small>
+        <div style="display:flex; align-items:center; gap:4px; font-weight:400; font-size:0.78rem; color:#888;">
+          <input type="number" id="miniCapInput" value="350" min="1" max="9999" class="mini-cap-input">
+          <span>個以降は通常として計算</span>
+        </div>
       </div>
       <div class="segment" id="miniCapSegment">
         <button class="active" data-val="on">あり</button>
@@ -397,6 +427,13 @@
     </div>
 
     <div class="result-sub">
+      <div class="result-row" id="candyBreakdown" style="display:none;">
+        <span class="candy-breakdown">
+          アメブ <span class="breakdown-mini" id="breakdownMini"></span>個
+          <span class="breakdown-plus">＋</span>
+          通常 <span class="breakdown-normal" id="breakdownNormal"></span>個
+        </span>
+      </div>
       <div class="result-row">
         <span>ゆめのかけら</span>
         <span class="diamond">◆</span>
@@ -487,6 +524,7 @@ const TYPE_EXP_MULT = { 600: 1.0, 900: 1.5, 1080: 1.8, 1260: 2.1 };
 let curLv = 15, tgtLv = 50, typeVal = 600, nature = 'neutral', boost = 'off';
 let remainingExp = Infinity; // Infinity → clamp to max in render()
 let useMiniCap = true;
+let miniCapValue = 350;
 
 function fmt(n) { return n.toLocaleString('ja-JP'); }
 
@@ -531,8 +569,8 @@ function render() {
   updateSliderFill(expSlider);
 
   const initialCarry = maxExpFirst - remainingExp;
-  let miniLeft = (boost === 'mini' && useMiniCap) ? 350 : Infinity;
-  let sumCandy = 0, sumShards = 0, expRem = 0, carry = initialCarry;
+  let miniLeft = (boost === 'mini' && useMiniCap) ? miniCapValue : Infinity;
+  let sumCandy = 0, sumMiniCandy = 0, sumNormalCandy = 0, sumShards = 0, expRem = 0, carry = initialCarry;
   for (let lv = curLv + 1; lv <= tgtLv; lv++) {
     const expLv = Math.round((D[lv][0] - D[lv-1][0]) * typeExpMult);
     expRem += expLv;
@@ -551,26 +589,27 @@ function render() {
     } else if (miniLeft > 0) {
       const miniNeeded = Math.ceil(expNeeded / epcBoosted);
       if (miniNeeded <= miniLeft) {
-        // 全レベル分ミニブーストで賄える
         candyLv = miniNeeded;
         shardsLv = candyLv * spc * 4;
         carry = candyLv * epcBoosted - expNeeded + carryBase;
         if (miniLeft !== Infinity) miniLeft -= miniNeeded;
+        sumMiniCandy += candyLv;
       } else {
-        // 残りミニを使い切り、不足分は通常アメで補う
         const miniExp = miniLeft * epcBoosted;
         const expStillNeeded = expNeeded - miniExp;
         const normalNeeded = Math.ceil(expStillNeeded / epcBase);
         candyLv = miniLeft + normalNeeded;
         shardsLv = miniLeft * spc * 4 + normalNeeded * spc;
         carry = normalNeeded * epcBase - expStillNeeded + carryBase;
+        sumMiniCandy += miniLeft;
+        sumNormalCandy += normalNeeded;
         miniLeft = 0;
       }
     } else {
-      // ミニブースト上限消費済み → 通常アメ
       candyLv = Math.ceil(expNeeded / epcBase);
       shardsLv = candyLv * spc;
       carry = candyLv * epcBase - expNeeded + carryBase;
+      sumNormalCandy += candyLv;
     }
     sumCandy += candyLv;
     sumShards += shardsLv;
@@ -579,6 +618,14 @@ function render() {
   document.getElementById('candyCount').textContent = fmt(sumCandy);
   document.getElementById('shardsValue').textContent = fmt(sumShards);
   document.getElementById('expValue').textContent = 'EXP ' + fmt(expRem);
+
+  const showBreakdown = boost === 'mini' && useMiniCap && sumNormalCandy > 0;
+  const breakdownEl = document.getElementById('candyBreakdown');
+  breakdownEl.style.display = showBreakdown ? 'flex' : 'none';
+  if (showBreakdown) {
+    document.getElementById('breakdownMini').textContent   = fmt(sumMiniCandy);
+    document.getElementById('breakdownNormal').textContent = fmt(sumNormalCandy);
+  }
 }
 
 function setCurLv(v) {
@@ -641,6 +688,11 @@ document.getElementById('miniCapSegment').addEventListener('click', e => {
   document.querySelectorAll('#miniCapSegment button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   render();
+});
+
+document.getElementById('miniCapInput').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  if (!isNaN(v) && v >= 1) { miniCapValue = v; render(); }
 });
 
 document.getElementById('typeHelpBtn').addEventListener('click', () => {
