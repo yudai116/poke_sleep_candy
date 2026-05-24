@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>アメ何個いる？ポケモンスリープ アメ・経験値シミュレータ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Sans', sans-serif;
+      background: #f0f0f0;
+      color: #2d3748;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      background: #fff;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: #eee;
+      padding: 18px 20px 16px;
+      border-bottom: 1px solid #ddd;
+    }
+    .header h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #2d3748;
+      line-height: 1.4;
+    }
+
+    /* Content */
+    .content { padding: 20px; }
+
+    /* Level selectors */
+    .levels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .level-block { display: flex; flex-direction: column; align-items: center; }
+    .level-block label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #2d3748;
+    }
+    .level-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .btn-pm {
+      width: 44px; height: 44px;
+      border-radius: 50px;
+      border: none;
+      background: #e8e8e8;
+      font-size: 1.5rem;
+      font-weight: 300;
+      color: #555;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.12s;
+      user-select: none;
+    }
+    .btn-pm:hover { background: #d5d5d5; }
+    .btn-pm:active { background: #c8c8c8; }
+    .btn-pm:disabled { opacity: 0.35; cursor: default; }
+
+    .level-number {
+      font-size: 1.9rem;
+      font-weight: 700;
+      min-width: 38px;
+      text-align: center;
+      color: #2d3748;
+    }
+    .level-number.target { color: #2979ff; }
+
+    /* Slider */
+    .slider-wrap { width: 100%; }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #e0e0e0;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #4caf50;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #4caf50;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+
+    /* Setting rows */
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      gap: 8px;
+    }
+    .setting-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #2d3748;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .help-badge {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      color: #666;
+      font-size: 0.7rem;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Segment control */
+    .segment {
+      display: flex;
+      background: #f0f0f0;
+      border-radius: 50px;
+      padding: 3px;
+      gap: 1px;
+    }
+    .segment button {
+      border: none;
+      background: transparent;
+      border-radius: 50px;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #888;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .segment button.active {
+      background: #4caf50;
+      color: #fff;
+    }
+
+    /* Type segment: number + sub-label */
+    .segment.type button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 4px 8px;
+      gap: 1px;
+    }
+    .segment.type .t-num { font-size: 0.88rem; font-weight: 700; }
+    .segment.type .t-sub { font-size: 0.58rem; font-weight: 400; opacity: 0.85; }
+
+    /* Nature segment */
+    .segment.nature button { font-size: 1rem; padding: 5px 12px; }
+
+    /* Boost */
+    .boost-control { display: flex; align-items: center; gap: 8px; }
+    .boost-icon { font-size: 1rem; color: #aaa; letter-spacing: -1px; }
+
+    .toggle-wrap { position: relative; display: inline-block; }
+    .toggle-wrap input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      display: block;
+      width: 52px; height: 28px;
+      background: #ccc;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      width: 22px; height: 22px;
+      background: #fff;
+      border-radius: 50%;
+      top: 3px; left: 3px;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+    .toggle-wrap input:checked + .toggle-track { background: #4caf50; }
+    .toggle-wrap input:checked + .toggle-track::after { transform: translateX(24px); }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: #eee;
+      margin: 4px -20px 24px;
+    }
+
+    /* Result area */
+    .result-main {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .candy-svg { width: 38px; height: 38px; }
+    .candy-count {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #2d3748;
+      line-height: 1;
+    }
+    .candy-unit {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #2d3748;
+      align-self: flex-end;
+      margin-bottom: 4px;
+    }
+
+    .result-sub {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .result-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      color: #888;
+    }
+    .result-row .val-shards { font-weight: 700; color: #e8a020; }
+    .result-row .val-exp { font-weight: 700; color: #4caf50; }
+    .diamond { color: #e8a020; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>アメ何個いる？<br>（ポケモンスリープ アメ・経験値シミュレータ）</h1>
+  </div>
+
+  <div class="content">
+    <!-- Level selectors -->
+    <div class="levels">
+      <div class="level-block">
+        <label>現在のレベル</label>
+        <div class="level-control">
+          <button class="btn-pm" id="curDec">−</button>
+          <span class="level-number" id="curDisplay">1</span>
+          <button class="btn-pm" id="curInc">+</button>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" id="curSlider" min="1" max="64" value="1">
+        </div>
+      </div>
+
+      <div class="level-block">
+        <label>目標のレベル</label>
+        <div class="level-control">
+          <button class="btn-pm" id="tgtDec">−</button>
+          <span class="level-number target" id="tgtDisplay">2</span>
+          <button class="btn-pm" id="tgtInc">+</button>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" id="tgtSlider" min="2" max="65" value="2">
+        </div>
+      </div>
+    </div>
+
+    <!-- EXP Type -->
+    <div class="setting-row">
+      <div class="setting-label">
+        経験値タイプ
+        <span class="help-badge">?</span>
+      </div>
+      <div class="segment type" id="typeSegment">
+        <button class="active" data-val="600">
+          <span class="t-num">600</span><span class="t-sub">通常</span>
+        </button>
+        <button data-val="900">
+          <span class="t-num">900</span><span class="t-sub">600族</span>
+        </button>
+        <button data-val="1080">
+          <span class="t-num">1080</span><span class="t-sub">伝説</span>
+        </button>
+        <button data-val="1260">
+          <span class="t-num">1260</span><span class="t-sub">ミュウ等</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Nature -->
+    <div class="setting-row">
+      <div class="setting-label">性格による経験値補正</div>
+      <div class="segment nature" id="natureSegment">
+        <button data-val="down">▼</button>
+        <button class="active" data-val="neutral">－</button>
+        <button data-val="up">▲</button>
+      </div>
+    </div>
+
+    <!-- Boost -->
+    <div class="setting-row">
+      <div class="setting-label">アメブースト</div>
+      <div class="boost-control">
+        <span class="boost-icon">≡≡</span>
+        <label class="toggle-wrap">
+          <input type="checkbox" id="boostToggle">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Results -->
+    <div class="result-main">
+      <svg class="candy-svg" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="20" cy="22" r="11" fill="#4caf50"/>
+        <circle cx="20" cy="22" r="7" fill="#66bb6a"/>
+        <rect x="18" y="4" width="4" height="10" rx="2" fill="#4caf50"/>
+        <circle cx="20" cy="14" r="3" fill="#388e3c"/>
+      </svg>
+      <span class="candy-count" id="candyCount">0</span>
+      <span class="candy-unit">個</span>
+    </div>
+
+    <div class="result-sub">
+      <div class="result-row">
+        <span>ゆめのかけら</span>
+        <span class="diamond">◆</span>
+        <span class="val-shards" id="shardsValue">0</span>
+      </div>
+      <div class="result-row">
+        <span>目標のレベルまであと</span>
+        <span class="val-exp" id="expValue">EXP 0</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// [expCumul, candyCumul, shardsCumul] indexed by level (1-65)
+const D = [
+  null,
+  [0, 0, 0],             // 1
+  [54, 2, 28],           // 2
+  [125, 4, 64],          // 3
+  [233, 7, 130],         // 4
+  [361, 11, 238],        // 5
+  [525, 15, 358],        // 6
+  [727, 21, 562],        // 7
+  [971, 28, 835],        // 8
+  [1245, 36, 1187],      // 9
+  [1560, 45, 1619],      // 10
+  [1905, 55, 2119],      // 11
+  [2281, 66, 2691],      // 12
+  [2688, 77, 3274],      // 13
+  [3107, 89, 3946],      // 14
+  [3536, 102, 4713],     // 15
+  [3976, 114, 5457],     // 16
+  [4430, 127, 6315],     // 17
+  [4899, 140, 7199],     // 18
+  [5382, 154, 8193],     // 19
+  [5879, 168, 9229],     // 20
+  [6394, 183, 10399],    // 21
+  [6931, 199, 11695],    // 22
+  [7489, 214, 12970],    // 23
+  [8068, 231, 14466],    // 24
+  [8668, 248, 16030],    // 25
+  [9290, 269, 18025],    // 26
+  [9933, 290, 20125],    // 27
+  [10598, 312, 22435],   // 28
+  [11284, 335, 24988],   // 29
+  [11992, 359, 27796],   // 30
+  [12721, 388, 31334],   // 31
+  [13469, 418, 35114],   // 32
+  [14235, 448, 39014],   // 33
+  [15020, 480, 43366],   // 34
+  [15823, 512, 47942],   // 35
+  [16644, 545, 52925],   // 36
+  [17483, 578, 58205],   // 37
+  [18340, 613, 64050],   // 38
+  [19215, 648, 70140],   // 39
+  [20108, 683, 76580],   // 40
+  [21018, 720, 83684],   // 41
+  [21946, 757, 91121],   // 42
+  [22891, 795, 99139],   // 43
+  [23854, 833, 107537],  // 44
+  [24834, 872, 116390],  // 45
+  [25831, 912, 125830],  // 46
+  [26846, 953, 136080],  // 47
+  [27878, 994, 146904],  // 48
+  [28927, 1036, 158622], // 49
+  [29993, 1079, 171307], // 50
+  [31355, 1133, 187993], // 51
+  [32917, 1196, 208342], // 52
+  [34664, 1266, 232002], // 53
+  [36610, 1343, 259414], // 54
+  [38805, 1431, 292150], // 55
+  [41084, 1522, 327731], // 56
+  [43488, 1619, 370120], // 57
+  [46021, 1720, 419206], // 58
+  [48687, 1827, 476772], // 59
+  [51493, 1939, 543188], // 60
+  [54358, 2053, 617402], // 61
+  [57280, 2170, 699068], // 62
+  [60257, 2289, 788318], // 63
+  [63286, 2411, 886406], // 64
+  [66363, 2534, 992924], // 65
+];
+
+const NATURE_EXP = { up: 30, neutral: 25, down: 21 };
+
+let curLv = 1, tgtLv = 2, typeVal = 600, nature = 'neutral', boost = false;
+
+function fmt(n) { return n.toLocaleString('ja-JP'); }
+
+function updateSliderFill(el) {
+  const min = parseInt(el.min), max = parseInt(el.max), val = parseInt(el.value);
+  const pct = ((val - min) / (max - min)) * 100;
+  el.style.background = `linear-gradient(to right, #4caf50 ${pct}%, #e0e0e0 ${pct}%)`;
+}
+
+function updateButtons() {
+  document.getElementById('curDec').disabled = curLv <= 1;
+  document.getElementById('curInc').disabled = curLv >= 64;
+  document.getElementById('tgtDec').disabled = tgtLv <= curLv + 1;
+  document.getElementById('tgtInc').disabled = tgtLv >= 65;
+}
+
+function render() {
+  document.getElementById('curDisplay').textContent = curLv;
+  document.getElementById('tgtDisplay').textContent = tgtLv;
+  const cs = document.getElementById('curSlider');
+  const ts = document.getElementById('tgtSlider');
+  cs.value = curLv; ts.min = curLv + 1; ts.value = tgtLv;
+  updateSliderFill(cs); updateSliderFill(ts);
+  updateButtons();
+
+  const candyBase  = D[tgtLv][1] - D[curLv][1];
+  const shardsBase = D[tgtLv][2] - D[curLv][2];
+  const expRem     = D[tgtLv][0] - D[curLv][0];
+
+  const factor = (600 / typeVal) * (25 / NATURE_EXP[nature]) * (boost ? 0.5 : 1);
+  document.getElementById('candyCount').textContent = fmt(Math.round(candyBase * factor));
+  document.getElementById('shardsValue').textContent = fmt(Math.round(shardsBase * factor));
+  document.getElementById('expValue').textContent = 'EXP ' + fmt(expRem);
+}
+
+function setCurLv(v) {
+  curLv = Math.max(1, Math.min(64, v));
+  if (tgtLv <= curLv) tgtLv = curLv + 1;
+  render();
+}
+function setTgtLv(v) {
+  tgtLv = Math.max(curLv + 1, Math.min(65, v));
+  render();
+}
+
+document.getElementById('curDec').addEventListener('click', () => setCurLv(curLv - 1));
+document.getElementById('curInc').addEventListener('click', () => setCurLv(curLv + 1));
+document.getElementById('curSlider').addEventListener('input', e => setCurLv(+e.target.value));
+document.getElementById('tgtDec').addEventListener('click', () => setTgtLv(tgtLv - 1));
+document.getElementById('tgtInc').addEventListener('click', () => setTgtLv(tgtLv + 1));
+document.getElementById('tgtSlider').addEventListener('input', e => setTgtLv(+e.target.value));
+
+document.getElementById('typeSegment').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-val]');
+  if (!btn) return;
+  typeVal = +btn.dataset.val;
+  document.querySelectorAll('#typeSegment button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+});
+
+document.getElementById('natureSegment').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-val]');
+  if (!btn) return;
+  nature = btn.dataset.val;
+  document.querySelectorAll('#natureSegment button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+});
+
+document.getElementById('boostToggle').addEventListener('change', e => {
+  boost = e.target.checked;
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
