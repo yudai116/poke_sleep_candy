@@ -290,6 +290,7 @@
     }
     .val-shards { font-weight: 700; color: #e8a020; }
     .val-exp { font-weight: 700; color: #4caf50; }
+    .diamond { color: #e8a020; font-size: 0.75rem; }
 
     /* Section labels */
     .section-label {
@@ -506,12 +507,13 @@
         </div>
       </div>
       <div class="result-card shards-card">
-        <div class="result-card-label">ゆめのかけら</div>
+        <span>ゆめのかけら</span>
+        <span class="diamond">◆</span>
         <span class="val-shards" id="shardsValue">0</span>
       </div>
       <div class="result-card exp-card">
-        <div class="result-card-label">目標まであと EXP</div>
-        <span class="val-exp" id="expValue">0</span>
+        <span>目標のレベルまであと</span>
+        <span class="val-exp" id="expValue">EXP 0</span>
       </div>
     </div>
   </div>
@@ -694,7 +696,7 @@ function render() {
   expRem -= initialCarry;
   document.getElementById('candyCount').textContent = fmt(sumCandy);
   document.getElementById('shardsValue').textContent = fmt(sumShards);
-  document.getElementById('expValue').textContent = fmt(expRem);
+  document.getElementById('expValue').textContent = 'EXP ' + fmt(expRem);
 
   const showBreakdown = boostOn && useMiniCap && sumNormalCandy > 0;
   const breakdownEl = document.getElementById('candyBreakdown');
