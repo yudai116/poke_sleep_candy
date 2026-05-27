@@ -40,9 +40,10 @@
     /* Level selectors */
     .levels {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 22px;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+      align-items: start;
     }
     .level-block { display: flex; flex-direction: column; align-items: center; }
     .level-block label {
@@ -263,15 +264,7 @@
     .mini-cap-input::-webkit-outer-spin-button { -webkit-appearance: none; }
     .mini-cap-input:focus { border-color: #4caf50; }
 
-    .candy-breakdown {
-      font-size: 0.82rem;
-      color: #888;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
     .breakdown-mini  { font-weight: 700; color: #4caf50; }
-    .breakdown-plus  { color: #bbb; }
     .breakdown-normal { font-weight: 700; color: #2d3748; }
 
     /* Divider */
@@ -281,14 +274,6 @@
       margin: 4px -20px 24px;
     }
 
-    /* Result area */
-    .result-main {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 14px;
-    }
     .candy-svg { width: 38px; height: 38px; }
     .candy-count {
       font-size: 3rem;
@@ -303,23 +288,77 @@
       align-self: flex-end;
       margin-bottom: 4px;
     }
+    .val-shards { font-weight: 700; color: #e8a020; }
+    .val-exp { font-weight: 700; color: #4caf50; }
 
-    .result-sub {
+    /* Section labels */
+    .section-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #bbb;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* Arrow between levels */
+    .level-arrow {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 42px;
+      color: #4caf50;
+      font-size: 1.4rem;
+      font-weight: 300;
+    }
+
+    /* Nature sub-label */
+    .segment.nature button {
+      font-size: 1rem;
+      padding: 5px 10px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 1px;
     }
-    .result-row {
+    .n-sub { font-size: 0.5rem; font-weight: 400; opacity: 0.85; }
+
+    /* Boost sub-group card */
+    .boost-sub-group {
+      background: #f6faf6;
+      border-left: 3px solid #4caf50;
+      border-radius: 0 10px 10px 0;
+      padding: 8px 14px 4px;
+      margin: -8px 0 14px;
+    }
+    .boost-sub-group .setting-row { margin-bottom: 8px; }
+    .boost-sub-group .setting-row:last-child { margin-bottom: 2px; }
+
+    /* Result cards */
+    .result-cards { display: flex; flex-direction: column; gap: 10px; }
+    .result-card {
+      background: #f8f9fa;
+      border-radius: 14px;
+      padding: 14px 18px;
+    }
+    .result-card-label {
+      font-size: 0.75rem;
+      color: #aaa;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+    .candy-card { text-align: center; }
+    .candy-main { display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .breakdown-line {
+      font-size: 0.78rem;
+      color: #aaa;
+      margin-top: 4px;
+    }
+    .shards-card, .exp-card {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 0.9rem;
-      color: #888;
+      justify-content: space-between;
     }
-    .result-row .val-shards { font-weight: 700; color: #e8a020; }
-    .result-row .val-exp { font-weight: 700; color: #4caf50; }
-    .diamond { color: #e8a020; font-size: 0.75rem; }
   </style>
 </head>
 <body>
@@ -330,6 +369,7 @@
 
   <div class="content">
     <!-- Level selectors -->
+    <div class="section-label">ポケモン情報</div>
     <div class="levels">
       <div class="level-block">
         <label>現在のレベル</label>
@@ -342,6 +382,8 @@
           <input type="range" id="curSlider" min="1" max="64" value="15">
         </div>
       </div>
+
+      <div class="level-arrow">→</div>
 
       <div class="level-block">
         <label>目標のレベル</label>
@@ -366,6 +408,8 @@
         <input type="range" id="expSlider" min="0" max="100" value="100">
       </div>
     </div>
+
+    <div class="section-label">アメの設定</div>
 
     <!-- EXP Type -->
     <div style="margin-bottom: 18px;">
@@ -405,9 +449,9 @@
     <div class="setting-row">
       <div class="setting-label">性格による経験値補正</div>
       <div class="segment nature" id="natureSegment">
-        <button data-val="down">▼</button>
-        <button class="active" data-val="neutral">－</button>
-        <button data-val="up">▲</button>
+        <button data-val="down"><span>▼</span><span class="n-sub">経験値↓</span></button>
+        <button class="active" data-val="neutral"><span>ー</span><span class="n-sub">通常</span></button>
+        <button data-val="up"><span>▲</span><span class="n-sub">経験値↑</span></button>
       </div>
     </div>
 
@@ -420,54 +464,54 @@
       </div>
     </div>
 
-    <!-- Mini checkbox (shown when boost ON) -->
-    <div class="setting-row" id="miniCheckRow" style="display:none;">
-      <label class="mini-check-label" for="miniCheck">
-        <input type="checkbox" id="miniCheck" checked>
-        ミニアメブースト
-      </label>
-    </div>
-
-    <!-- Boost cap (visible when boost ON) -->
-    <div class="setting-row" id="miniCapRow" style="display:none;">
-      <div class="setting-label" style="flex-direction:column; align-items:flex-start; gap:4px;">
-        アメブースト上限
-        <div style="display:flex; align-items:center; gap:4px; font-weight:400; font-size:0.78rem; color:#888;">
-          <input type="number" id="miniCapInput" value="350" min="1" max="9999" class="mini-cap-input">
-          <span>個以降は通常として計算</span>
-        </div>
+    <div class="boost-sub-group" id="boostSubGroup" style="display:none;">
+      <!-- Mini checkbox (shown when boost ON) -->
+      <div class="setting-row" id="miniCheckRow">
+        <label class="mini-check-label" for="miniCheck">
+          <input type="checkbox" id="miniCheck" checked>
+          ミニアメブースト
+        </label>
       </div>
-      <div class="segment" id="miniCapSegment">
-        <button class="active" data-val="on">あり</button>
-        <button data-val="off">なし</button>
+
+      <!-- Boost cap (visible when boost ON) -->
+      <div class="setting-row" id="miniCapRow">
+        <div class="setting-label" style="flex-direction:column; align-items:flex-start; gap:4px;">
+          アメブースト上限
+          <div style="display:flex; align-items:center; gap:4px; font-weight:400; font-size:0.78rem; color:#888;">
+            <input type="number" id="miniCapInput" value="350" min="1" max="9999" class="mini-cap-input">
+            <span>個以降は通常として計算</span>
+          </div>
+        </div>
+        <div class="segment" id="miniCapSegment">
+          <button class="active" data-val="on">あり</button>
+          <button data-val="off">なし</button>
+        </div>
       </div>
     </div>
 
     <div class="divider"></div>
 
     <!-- Results -->
-    <div class="result-main">
+    <div class="result-cards">
+      <div class="result-card candy-card">
+        <div class="result-card-label">必要なアメ</div>
+        <div class="candy-main">
       <img src="data:image/jpeg;base64,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" class="candy-svg" alt="アメ">
-      <span class="candy-count" id="candyCount">0</span>
-      <span class="candy-unit">個</span>
-    </div>
-
-    <div class="result-sub">
-      <div class="result-row" id="candyBreakdown" style="display:none;">
-        <span class="candy-breakdown">
+          <span class="candy-count" id="candyCount">0</span>
+          <span class="candy-unit">個</span>
+        </div>
+        <div class="breakdown-line" id="candyBreakdown" style="display:none;">
           アメブ <span class="breakdown-mini" id="breakdownMini"></span>個
-          <span class="breakdown-plus">＋</span>
-          通常 <span class="breakdown-normal" id="breakdownNormal"></span>個
-        </span>
+          ＋ 通常 <span class="breakdown-normal" id="breakdownNormal"></span>個
+        </div>
       </div>
-      <div class="result-row">
-        <span>ゆめのかけら</span>
-        <span class="diamond">◆</span>
+      <div class="result-card shards-card">
+        <div class="result-card-label">ゆめのかけら</div>
         <span class="val-shards" id="shardsValue">0</span>
       </div>
-      <div class="result-row">
-        <span>目標のレベルまであと</span>
-        <span class="val-exp" id="expValue">EXP 0</span>
+      <div class="result-card exp-card">
+        <div class="result-card-label">目標まであと EXP</div>
+        <span class="val-exp" id="expValue">0</span>
       </div>
     </div>
   </div>
@@ -588,8 +632,7 @@ function render() {
   const epcBoosted = epcBase * 2;
   const boost = !boostOn ? 'off' : boostIsMini ? 'mini' : 'normal';
 
-  document.getElementById('miniCheckRow').style.display = boostOn ? 'flex' : 'none';
-  document.getElementById('miniCapRow').style.display   = boostOn ? 'flex' : 'none';
+  document.getElementById('boostSubGroup').style.display = boostOn ? 'block' : 'none';
   document.getElementById('miniCapInput').value = boostIsMini ? miniCapValue : normalCapValue;
 
   // Remaining EXP slider/input setup
@@ -651,11 +694,11 @@ function render() {
   expRem -= initialCarry;
   document.getElementById('candyCount').textContent = fmt(sumCandy);
   document.getElementById('shardsValue').textContent = fmt(sumShards);
-  document.getElementById('expValue').textContent = 'EXP ' + fmt(expRem);
+  document.getElementById('expValue').textContent = fmt(expRem);
 
   const showBreakdown = boostOn && useMiniCap && sumNormalCandy > 0;
   const breakdownEl = document.getElementById('candyBreakdown');
-  breakdownEl.style.display = showBreakdown ? 'flex' : 'none';
+  breakdownEl.style.display = showBreakdown ? 'block' : 'none';
   if (showBreakdown) {
     document.getElementById('breakdownMini').textContent   = fmt(sumBoostedCandy);
     document.getElementById('breakdownNormal').textContent = fmt(sumNormalCandy);
