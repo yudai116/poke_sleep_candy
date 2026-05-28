@@ -360,6 +360,40 @@
       align-items: center;
       justify-content: space-between;
     }
+
+    /* Level shortcut buttons */
+    .level-shortcuts {
+      display: flex;
+      gap: 5px;
+      margin-top: 6px;
+      justify-content: center;
+    }
+    .btn-shortcut {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #2979ff;
+      background: #e8f0fe;
+      border: none;
+      border-radius: 50px;
+      padding: 3px 10px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .btn-shortcut:active { background: #c5d7fb; }
+
+    /* Cap preset buttons */
+    .btn-cap-preset {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #4caf50;
+      background: #e8f5e9;
+      border: none;
+      border-radius: 50px;
+      padding: 2px 9px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .btn-cap-preset:active { background: #c8e6c9; }
   </style>
 </head>
 <body>
@@ -395,6 +429,10 @@
         </div>
         <div class="slider-wrap">
           <input type="range" id="tgtSlider" min="16" max="65" value="50">
+        </div>
+        <div class="level-shortcuts">
+          <button class="btn-shortcut" data-lv="50" touch-action="manipulation">Lv50</button>
+          <button class="btn-shortcut" data-lv="60" touch-action="manipulation">Lv60</button>
         </div>
       </div>
     </div>
@@ -478,9 +516,15 @@
       <div class="setting-row" id="miniCapRow">
         <div class="setting-label" style="flex-direction:column; align-items:flex-start; gap:4px;">
           アメブースト上限
-          <div style="display:flex; align-items:center; gap:4px; font-weight:400; font-size:0.78rem; color:#888;">
-            <input type="number" id="miniCapInput" value="350" min="1" max="9999" class="mini-cap-input">
-            <span>個以降は通常として計算</span>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; align-items:center; gap:4px; font-weight:400; font-size:0.78rem; color:#888;">
+              <input type="number" id="miniCapInput" value="350" min="1" max="9999" class="mini-cap-input">
+              <span>個以降は通常として計算</span>
+            </div>
+            <div style="display:flex; gap:4px;">
+              <button class="btn-cap-preset" data-cap="50">50</button>
+              <button class="btn-cap-preset" data-cap="500">500</button>
+            </div>
           </div>
         </div>
         <div class="segment" id="miniCapSegment">
@@ -780,6 +824,19 @@ document.getElementById('miniCapInput').addEventListener('input', e => {
     if (boostIsMini) miniCapValue = v; else normalCapValue = v;
     render();
   }
+});
+
+document.querySelectorAll('.btn-shortcut[data-lv]').forEach(btn => {
+  btn.addEventListener('click', () => setTgtLv(+btn.dataset.lv));
+});
+
+document.querySelectorAll('.btn-cap-preset[data-cap]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const v = +btn.dataset.cap;
+    if (boostIsMini) miniCapValue = v; else normalCapValue = v;
+    document.getElementById('miniCapInput').value = v;
+    render();
+  });
 });
 
 document.getElementById('typeHelpBtn').addEventListener('click', () => {
