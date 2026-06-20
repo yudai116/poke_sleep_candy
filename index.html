@@ -634,7 +634,19 @@ const D = [
   [66363, 2534, 992924], // 65
 ];
 
-const NATURE_EXP = { up: 30, neutral: 25, down: 21 };
+// 性格による経験値補正（中立=1.0, ▲≒+18%, ▼≒-18%）
+// 旧値 {up:30, neutral:25, down:21} は base25 にこの倍率を掛けたものと一致
+const NATURE_MULT = { up: 1.18, neutral: 1.0, down: 0.82 };
+// アメ1個から得られる基礎EXP（中立性格）。ポケモンの現在レベルで決まる
+function baseEpcForLevel(curLevel) {
+  if (curLevel < 25) return 35;   // Lv1～Lv24
+  if (curLevel < 30) return 30;   // Lv25～Lv29
+  return 25;                       // Lv30以降
+}
+// 現在レベル・性格に応じたアメ1個あたりのEXP
+function epcForLevel(curLevel, nat) {
+  return Math.round(baseEpcForLevel(curLevel) * NATURE_MULT[nat]);
+}
 const TYPE_EXP_MULT = { 600: 1.0, 900: 1.5, 1080: 1.8, 1260: 2.1 };
 
 let curLv = 15, tgtLv = 50, typeVal = 600, nature = 'neutral', boostOn = false, boostIsMini = true;
@@ -674,8 +686,6 @@ function render() {
   updateButtons();
 
   const typeExpMult = TYPE_EXP_MULT[typeVal];
-  const epcBase    = NATURE_EXP[nature];
-  const epcBoosted = epcBase * 2;
   const boost = !boostOn ? 'off' : boostIsMini ? 'mini' : 'normal';
 
   document.getElementById('boostSubGroup').style.display = boostOn ? 'block' : 'none';
@@ -699,6 +709,9 @@ function render() {
   const shardsMult = boost === 'mini' ? 4 : boost === 'normal' ? 5 : 1;
   let sumCandy = 0, sumBoostedCandy = 0, sumNormalCandy = 0, sumShards = 0, expRem = 0, carry = initialCarry;
   for (let lv = curLv + 1; lv <= tgtLv; lv++) {
+    // アメを与えるときのポケモンの現在レベルは lv-1
+    const epcBase    = epcForLevel(lv - 1, nature);
+    const epcBoosted = epcBase * 2;
     const expLv = Math.round((D[lv][0] - D[lv-1][0]) * typeExpMult);
     expRem += expLv;
     const spc = (D[lv][2] - D[lv-1][2]) / (D[lv][1] - D[lv-1][1]) | 0;
