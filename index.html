@@ -33,6 +33,20 @@
       color: #2d3748;
       line-height: 1.4;
     }
+    .update-badge {
+      margin-top: 6px;
+      font-size: 0.7rem;
+      color: #888;
+      font-weight: 500;
+    }
+    .update-badge span {
+      background: #e8f5e9;
+      color: #4caf50;
+      border-radius: 50px;
+      padding: 1px 8px;
+      font-weight: 700;
+      margin-right: 4px;
+    }
 
     /* Content */
     .content { padding: 20px; }
@@ -400,6 +414,7 @@
 <div class="container">
   <div class="header">
     <h1>アメ何個いる？<br>（ポケモンスリープ アメ・経験値シミュレータ）</h1>
+    <div class="update-badge"><span>Updated</span>2026/06/25 アメEXP値を更新</div>
   </div>
 
   <div class="content">
@@ -639,8 +654,8 @@ const D = [
 const NATURE_MULT = { up: 1.18, neutral: 1.0, down: 0.82 };
 // アメ1個から得られる基礎EXP（中立性格）。ポケモンの現在レベルで決まる
 function baseEpcForLevel(curLevel) {
-  if (curLevel < 25) return 35;   // Lv1～Lv24
-  if (curLevel < 30) return 30;   // Lv25～Lv29
+  if (curLevel < 25) return 40;   // Lv1～Lv24
+  if (curLevel < 30) return 35;   // Lv25～Lv29
   return 25;                       // Lv30以降
 }
 // 現在レベル・性格に応じたアメ1個あたりのEXP
