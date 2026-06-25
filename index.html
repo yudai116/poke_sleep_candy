@@ -414,7 +414,7 @@
 <div class="container">
   <div class="header">
     <h1>アメ何個いる？<br>（ポケモンスリープ アメ・経験値シミュレータ）</h1>
-    <div class="update-badge"><span>Updated</span>2026/06/25 アメEXP値を更新</div>
+    <div class="update-badge"><span>Updated</span>2026/06/25 Lv70解禁・アメEXP値を更新</div>
   </div>
 
   <div class="content">
@@ -429,7 +429,7 @@
           <button class="btn-pm" id="curInc">+</button>
         </div>
         <div class="slider-wrap">
-          <input type="range" id="curSlider" min="1" max="64" value="15">
+          <input type="range" id="curSlider" min="1" max="69" value="15">
         </div>
       </div>
 
@@ -443,11 +443,12 @@
           <button class="btn-pm" id="tgtInc">+</button>
         </div>
         <div class="slider-wrap">
-          <input type="range" id="tgtSlider" min="16" max="65" value="50">
+          <input type="range" id="tgtSlider" min="16" max="70" value="50">
         </div>
         <div class="level-shortcuts">
           <button class="btn-shortcut" data-lv="50" touch-action="manipulation">Lv50</button>
           <button class="btn-shortcut" data-lv="60" touch-action="manipulation">Lv60</button>
+          <button class="btn-shortcut" data-lv="70" touch-action="manipulation">Lv70</button>
         </div>
       </div>
     </div>
@@ -579,7 +580,7 @@
 </div>
 
 <script>
-// [expCumul, candyCumul, shardsCumul] indexed by level (1-65)
+// [expCumul, candyCumul, shardsCumul] indexed by level (1-70)
 const D = [
   null,
   [0, 0, 0],             // 1
@@ -647,6 +648,11 @@ const D = [
   [60257, 2289, 788318], // 63
   [63286, 2411, 886406], // 64
   [66363, 2534, 992924], // 65
+  [69458, 2658, 1108492], // 66
+  [72574, 2783, 1238992], // 67
+  [75718, 2909, 1375576], // 68
+  [78907, 3037, 1525720], // 69
+  [82162, 3168, 1692352], // 70
 ];
 
 // 性格による経験値補正（中立=1.0, ▲≒+18%, ▼≒-18%）
@@ -686,9 +692,9 @@ function updateSliderFill(el) {
 
 function updateButtons() {
   document.getElementById('curDec').disabled = curLv <= 1;
-  document.getElementById('curInc').disabled = curLv >= 64;
+  document.getElementById('curInc').disabled = curLv >= 69;
   document.getElementById('tgtDec').disabled = tgtLv <= curLv + 1;
-  document.getElementById('tgtInc').disabled = tgtLv >= 65;
+  document.getElementById('tgtInc').disabled = tgtLv >= 70;
 }
 
 function render() {
@@ -780,13 +786,13 @@ function render() {
 }
 
 function setCurLv(v) {
-  curLv = Math.max(1, Math.min(64, v));
+  curLv = Math.max(1, Math.min(69, v));
   if (tgtLv <= curLv) tgtLv = curLv + 1;
   remainingExp = Infinity;
   scheduleRender();
 }
 function setTgtLv(v) {
-  tgtLv = Math.max(curLv + 1, Math.min(65, v));
+  tgtLv = Math.max(curLv + 1, Math.min(70, v));
   scheduleRender();
 }
 function setRemainingExp(v) {
