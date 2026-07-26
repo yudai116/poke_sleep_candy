@@ -451,7 +451,7 @@
 <div class="container">
   <div class="header">
     <h1>アメ何個いる？<br>（ポケモンスリープ アメ・経験値シミュレータ）</h1>
-    <div class="update-badge"><span>Updated</span>2026/06/25 Lv70解禁・アメEXP値を更新</div>
+    <div class="update-badge"><span>Updated</span>2026/07/26 ゴンベのおひるね島に対応・性格補正を修正</div>
   </div>
 
   <div class="content">
@@ -718,9 +718,9 @@ const D = [
   [82162, 3168, 1692352], // 70
 ];
 
-// 性格による経験値補正（中立=1.0, ▲≒+18%, ▼≒-18%）
-// 旧値 {up:30, neutral:25, down:21} は base25 にこの倍率を掛けたものと一致
-const NATURE_MULT = { up: 1.18, neutral: 1.0, down: 0.82 };
+// 性格による経験値補正
+// ▲(経験値↑): ×1.18（多く貰える） / ー(通常): ×1.0 / ▼(経験値↓): マイナス補正なし → ×1.0
+const NATURE_MULT = { up: 1.18, neutral: 1.0, down: 1.0 };
 // アメ1個から得られる基礎EXP（中立性格）。ポケモンの現在レベルで決まる
 function baseEpcForLevel(curLevel) {
   if (curLevel < 25) return 40;   // Lv1～Lv24
