@@ -630,7 +630,7 @@
         <span class="nap-days-label">7日満喫（フルEXP）<small>7日以上滞在で獲得EXP全額</small></span>
         <span class="nap-days-value"><span id="napDaysFull">7</span><span class="unit">日</span></span>
       </div>
-      <div class="nap-days-row">
+      <div class="nap-days-row" id="napMinRow" style="display:none;">
         <span class="nap-days-label">最短（早期引取）<small>7日未満は獲得EXP半減</small></span>
         <span class="nap-days-value"><span id="napDaysMin">7</span><span class="unit">日</span></span>
       </div>
@@ -845,16 +845,13 @@ function render() {
   const napRate = napTicket ? 600 : 150;
   // 7日満喫: 7日以上滞在でフルEXP → max(7, ceil(E/R))
   const napDaysFull = expRem <= 0 ? 0 : Math.max(7, Math.ceil(expRem / napRate));
-  // 最短: 7日未満の早期引取（EXP半減）も許容 → 半減で足りれば 2E/R、届かなければフルと同じ
-  let napDaysMin;
-  if (expRem <= 0) {
-    napDaysMin = 0;
-  } else {
-    const early = Math.ceil(2 * expRem / napRate);
-    napDaysMin = early < 7 ? early : napDaysFull;
-  }
+  // 最短（早期引取）: 7日未満でEXPが半減しても目標に届く場合のみ表示
+  // 半減で目標に届く必要日数 = ceil(2E/R)。これが7日未満のときだけ有効
+  const early = expRem <= 0 ? 0 : Math.ceil(2 * expRem / napRate);
+  const showMin = expRem > 0 && early < 7;
   document.getElementById('napDaysFull').textContent = fmt(napDaysFull);
-  document.getElementById('napDaysMin').textContent  = fmt(napDaysMin);
+  document.getElementById('napMinRow').style.display = showMin ? 'flex' : 'none';
+  if (showMin) document.getElementById('napDaysMin').textContent = fmt(early);
   document.getElementById('napRate').textContent = '1日あたり ' + fmt(napRate) + ' EXP 貯まる'
     + (napTicket ? '（150 + チケット450）' : '');
 
