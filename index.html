@@ -408,6 +408,43 @@
       touch-action: manipulation;
     }
     .btn-cap-preset:active { background: #c8e6c9; }
+
+    /* おひるね島 */
+    .nap-card {
+      background: #eef6ff;
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-top: 10px;
+    }
+    .nap-days-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 0;
+    }
+    .nap-days-row + .nap-days-row { border-top: 1px solid #dbe8f7; }
+    .nap-days-label {
+      font-size: 0.85rem;
+      color: #2d3748;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .nap-days-label small { font-size: 0.66rem; color: #999; font-weight: 400; }
+    .nap-days-value { font-weight: 800; font-size: 1.3rem; color: #2979ff; }
+    .nap-days-value .unit { font-size: 0.85rem; font-weight: 600; margin-left: 1px; }
+    .nap-rate {
+      font-size: 0.72rem;
+      color: #888;
+      margin-top: 8px;
+      text-align: right;
+    }
+    .nap-note {
+      font-size: 0.68rem;
+      color: #aaa;
+      line-height: 1.5;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -576,6 +613,32 @@
         <span class="val-exp" id="expValue">EXP 0</span>
       </div>
     </div>
+
+    <div class="divider"></div>
+
+    <!-- ゴンベのおひるね島 -->
+    <div class="section-label">ゴンベのおひるね島</div>
+    <div class="setting-row">
+      <div class="setting-label">おひるねリラックスチケット</div>
+      <div class="segment" id="napTicketSegment">
+        <button class="active" data-val="off">使わない</button>
+        <button data-val="on">使う</button>
+      </div>
+    </div>
+    <div class="nap-card">
+      <div class="nap-days-row">
+        <span class="nap-days-label">7日満喫（フルEXP）<small>7日以上滞在で獲得EXP全額</small></span>
+        <span class="nap-days-value"><span id="napDaysFull">7</span><span class="unit">日</span></span>
+      </div>
+      <div class="nap-days-row">
+        <span class="nap-days-label">最短（早期引取）<small>7日未満は獲得EXP半減</small></span>
+        <span class="nap-days-value"><span id="napDaysMin">7</span><span class="unit">日</span></span>
+      </div>
+      <div class="nap-rate" id="napRate">1日あたり 150 EXP 貯まる</div>
+      <div class="nap-note">
+        預けたポケモンは1分ごとにEXPが貯まり、引き取り時にまとめて成長します。7日未満で引き取ると獲得EXPが半分になります。目標レベルが上限（Lv70）を超える場合はそれ以上貯まりません。
+      </div>
+    </div>
   </div>
 </div>
 
@@ -675,6 +738,7 @@ let remainingExp = Infinity; // Infinity → clamp to max in render()
 let useMiniCap = true;
 let miniCapValue = 350;
 let normalCapValue = 3500;
+let napTicket = false; // おひるねリラックスチケット使用
 
 function fmt(n) { return n.toLocaleString('ja-JP'); }
 
@@ -776,6 +840,24 @@ function render() {
   document.getElementById('shardsValue').textContent = fmt(sumShards);
   document.getElementById('expValue').textContent = 'EXP ' + fmt(expRem);
 
+  // ゴンベのおひるね島: 目標EXP(expRem)を貯めるのに必要な日数
+  // 1日あたり 150EXP（チケット使用時は +450 で 600EXP）
+  const napRate = napTicket ? 600 : 150;
+  // 7日満喫: 7日以上滞在でフルEXP → max(7, ceil(E/R))
+  const napDaysFull = expRem <= 0 ? 0 : Math.max(7, Math.ceil(expRem / napRate));
+  // 最短: 7日未満の早期引取（EXP半減）も許容 → 半減で足りれば 2E/R、届かなければフルと同じ
+  let napDaysMin;
+  if (expRem <= 0) {
+    napDaysMin = 0;
+  } else {
+    const early = Math.ceil(2 * expRem / napRate);
+    napDaysMin = early < 7 ? early : napDaysFull;
+  }
+  document.getElementById('napDaysFull').textContent = fmt(napDaysFull);
+  document.getElementById('napDaysMin').textContent  = fmt(napDaysMin);
+  document.getElementById('napRate').textContent = '1日あたり ' + fmt(napRate) + ' EXP 貯まる'
+    + (napTicket ? '（150 + チケット450）' : '');
+
   const showBreakdown = boostOn && useMiniCap && sumNormalCandy > 0;
   const breakdownEl = document.getElementById('candyBreakdown');
   breakdownEl.style.display = showBreakdown ? 'block' : 'none';
@@ -840,6 +922,15 @@ document.getElementById('boostSegment').addEventListener('click', e => {
 
 document.getElementById('miniCheck').addEventListener('change', e => {
   boostIsMini = e.target.checked;
+  scheduleRender();
+});
+
+document.getElementById('napTicketSegment').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-val]');
+  if (!btn) return;
+  napTicket = btn.dataset.val === 'on';
+  document.querySelectorAll('#napTicketSegment button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
   scheduleRender();
 });
 
