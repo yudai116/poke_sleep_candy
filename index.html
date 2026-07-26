@@ -451,7 +451,7 @@
 <div class="container">
   <div class="header">
     <h1>アメ何個いる？<br>（ポケモンスリープ アメ・経験値シミュレータ）</h1>
-    <div class="update-badge"><span>Updated</span>2026/07/26 ゴンベのおひるね島に対応・性格補正を修正</div>
+    <div class="update-badge"><span>Updated</span>2026/07/26 お昼寝島の性格補正を調整（飴は▼マイナス補正あり）</div>
   </div>
 
   <div class="content">
@@ -718,9 +718,11 @@ const D = [
   [82162, 3168, 1692352], // 70
 ];
 
-// 性格による経験値補正
-// ▲(経験値↑): ×1.18（多く貰える） / ー(通常): ×1.0 / ▼(経験値↓): マイナス補正なし → ×1.0
-const NATURE_MULT = { up: 1.18, neutral: 1.0, down: 1.0 };
+// 飴レベルアップの性格補正
+// ▲(経験値↑): ×1.18（多く貰える） / ー(通常): ×1.0 / ▼(経験値↓): ×0.82（マイナス補正あり）
+const NATURE_MULT = { up: 1.18, neutral: 1.0, down: 0.82 };
+// お昼寝島の性格補正: ▲は×1.18、▼はマイナス補正なし（×1.0）
+const NAP_NATURE_MULT = { up: 1.18, neutral: 1.0, down: 1.0 };
 // アメ1個から得られる基礎EXP（中立性格）。ポケモンの現在レベルで決まる
 function baseEpcForLevel(curLevel) {
   if (curLevel < 25) return 40;   // Lv1～Lv24
@@ -841,8 +843,9 @@ function render() {
   document.getElementById('expValue').textContent = 'EXP ' + fmt(expRem);
 
   // ゴンベのおひるね島: 目標EXP(expRem)を貯めるのに必要な日数
-  // 1日あたり 150EXP（チケット使用時は +450 で 600EXP）
-  const napRate = napTicket ? 600 : 150;
+  // 基本 1日150EXP（チケット使用時は +450 で 600EXP）に性格補正（▲×1.18, ▼はマイナスなし）
+  const napBase = napTicket ? 600 : 150;
+  const napRate = Math.round(napBase * NAP_NATURE_MULT[nature]);
   // 7日満喫: 7日以上滞在でフルEXP → max(7, ceil(E/R))
   const napDaysFull = expRem <= 0 ? 0 : Math.max(7, Math.ceil(expRem / napRate));
   // 最短（早期引取）: 7日未満でEXPが半減しても目標に届く場合のみ表示
@@ -853,7 +856,7 @@ function render() {
   document.getElementById('napMinRow').style.display = showMin ? 'flex' : 'none';
   if (showMin) document.getElementById('napDaysMin').textContent = fmt(early);
   document.getElementById('napRate').textContent = '1日あたり ' + fmt(napRate) + ' EXP 貯まる'
-    + (napTicket ? '（150 + チケット450）' : '');
+    + (nature === 'up' ? '（性格補正×1.18）' : '');
 
   const showBreakdown = boostOn && useMiniCap && sumNormalCandy > 0;
   const breakdownEl = document.getElementById('candyBreakdown');
